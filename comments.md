@@ -5,7 +5,7 @@
 - src/main.js
 	- src/App.vue  {router-view} `<router-view></router-view>`
 	- src/router/index.js {layouts, todo}
-	- src/components/layouts.vue {menus, todo}  `<menus></menus>  <router-view></router-view>`
+	- src/components/layouts.vue {menus, todo}  `<menus></menus>  <router-view></router-view>` ,与store 数据交互 menuOpen
 	- src/components/menus.vue {item}, 菜单栏包含item列表，[{标题，数量， 锁定标记}]
     	- item 来自 `this.$store.getters.getTodoList`
 	- src/components/todo.vue {item} 包含 [标题栏，输入栏， item列表]

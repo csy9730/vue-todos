@@ -111,7 +111,7 @@ export default {
       addRecord({ id: ID, text: this.text }).then(res => {
         this.text = '';
         this.init();
-        this.$store.dispatch('getTodo');
+        this.$store.dispatch('fetchTodos');
       });
     },
     updateTodo() {
@@ -120,7 +120,7 @@ export default {
         todo: this.todo
       }).then(data => {
         // _this.init();
-        _this.$store.dispatch('getTodo');
+        _this.$store.dispatch('fetchTodos');
       });
     },
     updateTitle() {

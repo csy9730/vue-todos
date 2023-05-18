@@ -2,7 +2,7 @@ import {
   getTodoList
 } from '../api/api'; // 引入api接口函数getTodoList，请求最新的代办事项列表数据
 
-export const getTodo = ({ // 定义一个名字为getTodo的事件
+export const fetchTodos = ({ // 定义一个名字为getTodo的事件
   commit
 }) => {
   return new Promise((resolve) => {
@@ -12,7 +12,7 @@ export const getTodo = ({ // 定义一个名字为getTodo的事件
      函数返回值后，在调用store.js里面的EDITTODE方法，并且把值传给它。
      */
     getTodoList().then((res) => {
-      commit('EDITTODE', res.data.todos);
+      commit('EDITTODOLIST', res.data.todos);
       resolve();
     });
   });
@@ -21,5 +21,5 @@ export const getTodo = ({ // 定义一个名字为getTodo的事件
 export const updateMenu = ({ // 定义一个名字为updateMenu的事件
   commit
 }) => {
-  commit('MENUOPEN'); // 调用store.js里面的MENUOPEN方法
+  commit('MENUSWITCH'); // 调用store.js里面的MENUOPEN方法
 };
