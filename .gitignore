@@ -7,3 +7,6 @@ yarn-error.log*
 
 .vscode/
 package-lock.json
+
+*.pyc
+__pycached__/
