@@ -45,7 +45,7 @@ export default {
         id: this.id, record: this.item, index: this.index
       }).then(data => {
         this.init();
-        this.$store.dispatch('getTodo');
+        this.$store.dispatch('fetchTodos');
       });
     }
   }

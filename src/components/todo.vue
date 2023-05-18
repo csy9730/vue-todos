@@ -47,7 +47,7 @@
       <!-- 用户新增代办事项的input模块 -->
       <div class=" form todo-new input-symbol">
         <!-- 绑定disabled值，当todo.locked为绑定的时候，禁止input输入,双向绑定text,和监听input的回车事件@keyup.enter -->
-        <input type="text" v-model="text" placeholder='请输入' @keyup.enter="onAdd" :disabled="todo.locked" />
+        <input type="text" v-model="text" placeholder='请输入, 回车结束' @keyup.enter="onAdd" :disabled="todo.locked" />
         <span class="icon-add"></span>
       </div>
     </nav>
@@ -104,14 +104,21 @@ export default {
           locked: locked,
           isDelete: isDelete
         };
+      }).catch(() => {
+        console.log('c');
+        this.$router.push({
+          name: 'todos',
+          params: {}
+        });
       });
     },
     onAdd() {
+      console.log('add ', this.$route.params.id);
       const ID = this.$route.params.id;
       addRecord({ id: ID, text: this.text }).then(res => {
         this.text = '';
         this.init();
-        this.$store.dispatch('getTodo');
+        this.$store.dispatch('fetchTodos');
       });
     },
     updateTodo() {
@@ -120,7 +127,7 @@ export default {
         todo: this.todo
       }).then(data => {
         // _this.init();
-        _this.$store.dispatch('getTodo');
+        _this.$store.dispatch('fetchTodos');
       });
     },
     updateTitle() {
