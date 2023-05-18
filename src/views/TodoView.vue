@@ -14,8 +14,8 @@
 </template>
 
 <script>
-import menus from './menus';
-import todo from './todo';
+import menus from '@/components/menus';
+import todo from '@/components/todo';
 export default {
   components: {
     menus,
