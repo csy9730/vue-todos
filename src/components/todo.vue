@@ -106,9 +106,17 @@ export default {
         };
       }).catch(() => {
         console.log('c');
+        this.items = [];
+        this.todo = {
+          id: 0,
+          title: 'untitled',
+          count: 0,
+          locked: false,
+          isDelete: false
+        };
         this.$router.push({
-          name: 'todos',
-          params: {}
+          name: 'todo',
+          params: {'id': 1}
         });
       });
     },

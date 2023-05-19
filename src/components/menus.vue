@@ -48,7 +48,14 @@ export default {
     // });
     this.$store.dispatch('fetchTodos').then(() => { // 调用vuex actions.js 里面的 getTodo函数
       this.$nextTick(() => {
-        // this.goList(this.todoList[0].id);
+        if (this.todoList.length) {
+          this.goList(this.todoList[0].id);
+        } else {
+          this.goList(0);
+          if (!this.$store.state.menuOpen) {
+            this.$store.commit('MENUSWITCH');
+          }
+        }
       });
     });
   },

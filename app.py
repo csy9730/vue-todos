@@ -21,7 +21,6 @@ db = SQLAlchemy()
 db.init_app(app)
 
 Base = db.Model
-
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
@@ -47,6 +46,7 @@ class Todolist(Base):
         KEYS = ('id', "title", "isDelete", "locked")
         dct = {k:v for k, v in self.__dict__.items() if k in KEYS}
         dct["record"] = [r.to_dict() for r in self.record]
+        dct["count"] = len(dct["record"])
         return dct
 
     def from_dict(self, dat:Dict):
@@ -105,10 +105,14 @@ def todo_id():
     tid = request.args.get('id')
     print(tid)
     todo:Todolist = Todolist.query.filter_by(id=tid).first()
-    response = {
-        "todo": todo.to_dict()
-    }
-    return jsonify(response)
+    print(todo)
+    if todo:
+        response = {
+            "todo": todo.to_dict()
+        }
+        return jsonify(response)
+    else:
+        return jsonify({"todo":{}}), 404
 
 @app.route('/todo/addTodo', methods=["POST"])
 def todo_add():
