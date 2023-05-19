@@ -37,6 +37,11 @@ export default new Router({
 - npm install --legacy-peer-deps
 - npm run dev
 
+- flask db init
+- flask db commit
+- flask db upgrade
+
+
 ## misc
 
 ### todo

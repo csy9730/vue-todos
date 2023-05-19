@@ -1,68 +1,80 @@
-from flask import request
+from typing import List, Dict
+import os
+from flask import request, redirect, render_template, make_response
 from flask import Flask, render_template, jsonify
-from random import *
-import random
 from flask_cors import CORS
-import requests
-
-# app = Flask(__name__,
-#             template_folder="../../frontend/dist",
-#             static_folder="../../frontend/dist/static")
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 
 app = Flask(__name__,
             static_folder = "./todo/static",
             template_folder = "./todo")
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+DB = 'sqlite:///' + os.path.join(basedir, 'pwdb.sqlite')
 
-class TodoList:
-    def __init__(self) -> None:
-        self.data = []
+app.config['SQLALCHEMY_DATABASE_URI'] = DB
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy()
+db.init_app(app)
 
-    def add(self, todo=None):
-        if not todo:
-            N = random.randint(1,6)
-            todo = {
-                "id": random.randint(100, 1000),
-                "title": randomText(),# 随机标题
-                "isDelete": False, #  是否删除
-                "locked": False, # 随机锁定
-                "record": [{"text": randomText(),"isDelete": False, "checked": False} for i in range(N)]
-            }
-        self.data.append(todo)
+Base = db.Model
 
-    def find(self, tid:int):
-        todo = {}
-        for i,td in enumerate(self.data):
-            if str(td["id"]) == str(tid):
-                todo = td
-                break
-        return todo, i
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), unique=True)
+    email = Column(String(120), unique=True)
 
-    def __getitem__(self, idx):
-        return self.data[idx]
-    
-    def __setitem__(self, idx, v):
-        self.data[idx] = v
+    def __init__(self, name=None, email=None):
+        self.name = name
+        self.email = email
 
-    def __len__(self):
-        return len(self.data)
-    
-    
+    def __repr__(self):
+        return f'<User {self.name!r}>'
 
-Todos = TodoList()
+class Todolist(Base):
+    __tablename__ = 'todolists'
+    id = Column(Integer, primary_key=True)
+    title = Column(String(50))
+    isDelete = Column(Boolean, default=False)
+    locked = Column(Boolean, default=False)
+    record = relationship('Todorecord', backref='todolists', lazy='dynamic')
 
+    def to_dict(self):
+        KEYS = ('id', "title", "isDelete", "locked")
+        dct = {k:v for k, v in self.__dict__.items() if k in KEYS}
+        dct["record"] = [r.to_dict() for r in self.record]
+        return dct
 
-def randomText(N=8):
-    bs = "abcdefghijklmnopqrstuvwxyz"
-    rr = []
-    for i in range(N):
-        r = random.randint(0, 25)
-        rr.append(bs[r])
-    return ''.join(rr)
-    
-for i in range(5) : 
-    Todos.add()
+    def from_dict(self, dat:Dict):
+        for k, v in dat.items():
+            setattr(self, k, v)
+
+class Todorecord(Base):
+    __tablename__ = 'todorecords'
+    id = Column(Integer, primary_key=True)
+    text = Column(String(250))
+    isDelete = Column(Boolean, default=False)
+    checked = Column(Boolean, default=False)
+    index = Column(Integer)
+    todo_id = Column(Integer, ForeignKey('todolists.id'))
+
+    def to_dict(self):
+        KEYS = ('id', "text", "isDelete", "checked", "index", "todo_id")
+        dct = {k:v for k, v in self.__dict__.items() if k in KEYS}
+        return dct
+
+    def from_dict(self, dat:Dict):
+        for k, v in dat.items():
+            if k in ("text", "isDelete", "checked", "index", "todo_id"):
+                setattr(self, k, v)
+
+from flask_migrate import Migrate
+migrate = Migrate()
+migrate.init_app(app, db)
 
 # 主页面
 @app.route('/')
@@ -71,32 +83,20 @@ def index():
     return render_template('index.html')
 
 
-# 生成词云图片接口，以base64格式返回
-# @app.route('/word/cloud/generate', methods=["POST"])
-# def cloud():
-#     text = request.json.get("word")
-#     return ""
-
-
 @app.route('/api/random')
 def random_number():
+    import random
     response = {
-        'randomNumber': randint(1, 100)
+        'randomNumber': random.randint(1, 100)
     }
     return jsonify(response)
-
-# @app.route('/', defaults={'path': ''})
-# @app.route('/<path:path>')
-# def catch_all(path):
-#     if app.debug:
-#         return requests.get('http://localhost:8080/{}'.format(path)).text
-#     return render_template("index.html")
 
 
 @app.route('/todo/list')
 def todo_list():
+    tds:List[Todolist] = Todolist.query.order_by(Todolist.id.desc())
     response = {
-        'todos': Todos.data
+        'todos': [td.to_dict() for td in tds]
     }
     return jsonify(response)
 
@@ -104,24 +104,24 @@ def todo_list():
 def todo_id():
     tid = request.args.get('id')
     print(tid)
-    todo, idx = Todos.find(tid)
-    print(Todos[idx])
+    todo:Todolist = Todolist.query.filter_by(id=tid).first()
     response = {
-        "todo": todo
+        "todo": todo.to_dict()
     }
     return jsonify(response)
 
 @app.route('/todo/addTodo', methods=["POST"])
 def todo_add():
-    id = randint(111, 3000)
     todo = {
-        "id": id,
+        # "id": id,
         "title": 'newList',
         "isDelete": False,
         "locked": False,
         "record": []
     }
-    Todos.add(todo)
+    tsk = Todolist(**todo)
+    db.session.add(tsk)
+    db.session.commit()
     return jsonify(todo)
 
 @app.route('/todo/editTodo', methods=["POST"])
@@ -129,10 +129,11 @@ def todo_edit_id():
     td = request.get_json()['todo']
     print(td)
     tid = td["id"]
-    todo, idx = Todos.find(tid)
-    todo.update(td)
-    # print(todo)
-    Todos[idx] = todo
+    todo:Todolist = Todolist.query.filter_by(id=tid).first()
+    todo.from_dict(td)
+    db.session.add(todo)
+    db.session.commit()
+
     return jsonify({
         "err": 200
     })
@@ -141,13 +142,18 @@ def todo_edit_id():
 def todo_addRecord():
     td = request.get_json()
     print(td)
-    todo, _ = Todos.find(td["id"])
+    tid = td["id"]
+    todo:Todolist = Todolist.query.filter_by(id=tid).first()
+    # todo.from_dict(td)
     stodo = {
         "text": td["text"],
         "isDelete": False,
         "checked": False,
+        "todo_id": tid
     }
-    todo["record"].append(stodo)
+    rec = Todorecord(**stodo)
+    db.session.add(rec)
+    db.session.commit()
     return jsonify({
         "err": 200
     })
@@ -155,11 +161,34 @@ def todo_addRecord():
 @app.route('/todo/editRecord', methods=["POST"])
 def todo_editRecord():
     td = request.get_json()
-    print(td)
+    print("todo_editRecord", td)
+    tid = td["id"]
+    todo:Todolist = Todolist.query.filter_by(id=tid).first()
     index = td["index"]
-    todo, idx = Todos.find(td["id"])
-    todo["record"][index] = td["record"]
-    Todos[idx] = todo
+    rid = todo.record[index].id 
+    rec = Todorecord.query.filter_by(id=rid).first()
+    rec.from_dict(td["record"])
+    db.session.add(rec)
+    db.session.commit()
     return jsonify({
         "err": 200
     })
+
+@app.errorhandler(403)
+def forbidden(e):
+    return make_response(render_template('index.html'), 403)
+    # return redirect('/#403', code=403)
+    # return render_template('403.html'), 403
+
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return make_response(render_template('index.html'), 404)
+    # return redirect('/#404', code=404)
+    # return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return make_response(render_template('index.html'), 500)
+    return redirect('/#500', code=500)
+    # return render_template('500.html'), 500

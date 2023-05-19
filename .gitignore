@@ -10,3 +10,5 @@ package-lock.json
 
 *.pyc
 __pycached__/
+migrations/
+*.sqlite
